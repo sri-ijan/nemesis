@@ -9,6 +9,18 @@ import { fetchLeetCodeStats } from "../services/leetcode.js";
 
 const router = Router();
 
+// GET /api/users/verify-handle/:handle — checks if a CF handle exists,
+// used by the frontend before creating a user, so typos get caught early
+// instead of surfacing as a confusing 500 later.
+router.get("/verify-handle/:handle", async (req, res) => {
+  try {
+    const info = await fetchCFUserInfo(req.params.handle);
+    res.json({ valid: true, rating: info.rating });
+  } catch {
+    res.json({ valid: false });
+  }
+});
+
 // POST /api/users  { displayName, codeforcesHandle, leetcodeHandle }
 router.post("/", async (req, res) => {
   try {

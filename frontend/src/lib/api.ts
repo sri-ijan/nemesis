@@ -7,6 +7,13 @@ import type { RivalryDoc, UserDoc } from "../types";
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 const api = axios.create({ baseURL: API_BASE });
 
+// Checks if a CF handle exists before we create a user with it — catches
+// typos early with a clear message instead of a confusing 500 later.
+export async function verifyHandle(handle: string): Promise<{ valid: boolean; rating?: number }> {
+  const { data } = await api.get(`/users/verify-handle/${encodeURIComponent(handle)}`);
+  return data;
+}
+
 export async function createUser(payload: {
   displayName: string;
   codeforcesHandle?: string;
