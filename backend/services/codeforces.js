@@ -102,6 +102,7 @@ export async function fetchCFSubmissions(handle, count = 10000) {
       2,
       "0",
     )}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    solvedDays.add(day);
 
     if (sub.creationTimeSeconds >= sevenDaysAgoSec) solvesLast7Days += 1;
 
@@ -121,6 +122,11 @@ export async function fetchCFSubmissions(handle, count = 10000) {
   let bestStreakDays = 0;
   const cursor = new Date();
   cursor.setUTCHours(0, 0, 0, 0);
+  if (!solvedDays.has(cursor.toISOString().slice(0, 10))) {
+    // Haven't solved anything yet today — that doesn't break a streak that's
+    // still active as of yesterday, so start the walk-back from yesterday.
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
   while (solvedDays.has(cursor.toISOString().slice(0, 10))) {
     currentStreakDays += 1;
     cursor.setUTCDate(cursor.getUTCDate() - 1);
