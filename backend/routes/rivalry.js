@@ -6,6 +6,64 @@ import { generateNarrative } from "../services/gemini.js";
 
 const router = Router();
 
+// IST is UTC+5:30 — match the same offset used in
+// services/codeforces.js so round boundaries line up with the live
+// solvedThisWeek number (otherwise a solve right around midnight IST
+// could fall in different weeks depending on which boundary is used).
+const IST_OFFSET_SEC = 5.5 * 60 * 60;
+
+// Week id = "YYYY-MM-DD" of that week's Sunday, computed in IST.
+function getWeekId(date) {
+  const shifted = new Date(date.getTime() + IST_OFFSET_SEC * 1000);
+  const d = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()));
+  const daysSinceSunday = d.getUTCDay(); // 0 = Sunday, read as IST day-of-week
+  d.setUTCDate(d.getUTCDate() - daysSinceSunday);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Checks if the week has rolled over since the last time this rivalry was
+ * tracked. If so, finalizes the just-ended round into roundHistory +
+ * updates the season tally, then starts a fresh baseline for the new
+ * week. Runs reactively on every dashboard load — no cron needed.
+ */
+function rollWeeklyRoundIfNeeded(rivalry, userA, userB) {
+  const currentWeekId = getWeekId(new Date());
+  const tracking = rivalry.weekTracking;
+
+  if (!tracking?.weekId) {
+    rivalry.weekTracking = {
+      weekId: currentWeekId,
+      startSolvedA: userA.stats.cfProblemsSolved,
+      startSolvedB: userB.stats.cfProblemsSolved,
+    };
+    return;
+  }
+
+  if (tracking.weekId === currentWeekId) return; // still the same round
+
+  const solvedA = Math.max(0, userA.stats.cfProblemsSolved - tracking.startSolvedA);
+  const solvedB = Math.max(0, userB.stats.cfProblemsSolved - tracking.startSolvedB);
+  const winnerUserId =
+    solvedA === solvedB ? null : solvedA > solvedB ? userA._id.toString() : userB._id.toString();
+
+  rivalry.roundHistory.push({
+    weekId: tracking.weekId,
+    solvedA,
+    solvedB,
+    winnerUserId,
+  });
+
+  if (winnerUserId === userA._id.toString()) rivalry.seasonScoreA += 1;
+  else if (winnerUserId === userB._id.toString()) rivalry.seasonScoreB += 1;
+
+  rivalry.weekTracking = {
+    weekId: currentWeekId,
+    startSolvedA: userA.stats.cfProblemsSolved,
+    startSolvedB: userB.stats.cfProblemsSolved,
+  };
+}
+
 // POST /api/rivalries  { userAId, userBId }
 router.post("/", async (req, res) => {
   try {
@@ -40,6 +98,9 @@ router.get("/:id", async (req, res) => {
       upsolveRatio: rivalry.userB.activity.upsolveRatio,
       rating: rivalry.userB.stats.cfRating,
     });
+
+    rollWeeklyRoundIfNeeded(rivalry, rivalry.userA, rivalry.userB);
+
     await rivalry.save();
 
     res.json(rivalry);
@@ -49,8 +110,6 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/rivalries/:id/narrative
-// Generates a fresh recap + catch-up tip using Gemini directly
-// (services/gemini.js) and persists it.
 router.post("/:id/narrative", async (req, res) => {
   try {
     const rivalry = await Rivalry.findById(req.params.id)

@@ -5,6 +5,7 @@ import type { RivalryDoc } from "../types";
 import RatingChart from "../components/RatingChart";
 import DuelCard from "../components/DuelCard";
 import ProfileDialCard from "../components/ProfileDialCard";
+import SeasonScoreCard from "../components/SeasonScoreCard";
 import toast from "react-hot-toast";
 export default function Dashboard() {
   const { rivalryId } = useParams();
@@ -140,6 +141,8 @@ export default function Dashboard() {
           isLeader={obsessionScoreB > obsessionScoreA}
         />
       </section>
+
+      <SeasonScoreCard rivalry={rivalry} />
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <ProfileDialCard user={userA} accent="amber" momentum={momentumA} />

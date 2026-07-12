@@ -47,6 +47,7 @@ const userSchema = new mongoose.Schema(
     // Rolling obsession inputs — see services/obsessionScore.js for formula
     activity: {
       solvesLast7Days: { type: Number, default: 0 },
+      solvedThisWeek: { type: Number, default: 0 }, // since last Sunday 00:00 UTC
       currentStreakDays: { type: Number, default: 0 },
       bestStreakDays: {
         type: Number,

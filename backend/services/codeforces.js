@@ -24,6 +24,31 @@ const CORE_TAGS = [
   "geometry",
 ];
 
+// IST is UTC+5:30. Week/day boundaries are computed in IST, not UTC —
+// otherwise solves made in the IST morning (before 5:30am) land on the
+// "wrong side" of a UTC midnight boundary and silently don't count,
+// which is confusing since the person thinks in IST calendar days.
+const IST_OFFSET_SEC = 5.5 * 60 * 60;
+
+/** Shifts a unix timestamp so its UTC-field getters read as IST wall-clock time. */
+function toISTShifted(unixSec) {
+  return new Date((unixSec + IST_OFFSET_SEC) * 1000);
+}
+
+/**
+ * Unix timestamp (seconds, real UTC) corresponding to the most recent
+ * Sunday 00:00 IST — the start of "this week" for the live season-round
+ * display. If today IS Sunday (IST), this returns today's IST midnight.
+ */
+function getWeekStartTimestamp() {
+  const nowIST = toISTShifted(Date.now() / 1000);
+  const daysSinceSunday = nowIST.getUTCDay(); // 0 = Sunday, read as IST day-of-week
+  const startIST = new Date(
+    Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate() - daysSinceSunday)
+  );
+  return startIST.getTime() / 1000 - IST_OFFSET_SEC; // back to real UTC timestamp
+}
+
 /**
  * Fetches current rating snapshot for a handle.
  * CF API returns an array in `result`; we want the single user object.
@@ -88,6 +113,7 @@ export async function fetchCFSubmissions(handle, count = 10000) {
   const solvedDays = new Set(); // "YYYY-MM-DD" strings, UTC
   let solvesLast7Days = 0;
   const sevenDaysAgoSec = Date.now() / 1000 - 7 * 24 * 60 * 60;
+  const weekStartSec = getWeekStartTimestamp();
 
   // Dedup by problem — key -> { time, participantType, rating, tags }
   const firstSolveByProblem = new Map();
@@ -96,7 +122,7 @@ export async function fetchCFSubmissions(handle, count = 10000) {
     if (sub.verdict !== "OK") continue;
     const key = `${sub.problem.contestId}-${sub.problem.index}`;
 
-    const d = new Date(sub.creationTimeSeconds * 1000);
+    const d = toISTShifted(sub.creationTimeSeconds);
 
     const day = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
       2,
@@ -120,7 +146,7 @@ export async function fetchCFSubmissions(handle, count = 10000) {
   // Streak
   let currentStreakDays = 0;
   let bestStreakDays = 0;
-  const cursor = new Date();
+  const cursor = toISTShifted(Date.now() / 1000);
   cursor.setUTCHours(0, 0, 0, 0);
   if (!solvedDays.has(cursor.toISOString().slice(0, 10))) {
     // Haven't solved anything yet today — that doesn't break a streak that's
@@ -160,16 +186,18 @@ export async function fetchCFSubmissions(handle, count = 10000) {
 
   bestStreakDays = longest;
 
-  // Upsolve ratio + difficulty breakdown + tag counts, all from the same
-  // deduped solved-problem set.
+  // Upsolve ratio + difficulty breakdown + tag counts + this-week solve
+  // count, all from the same deduped solved-problem set.
   let contestProblemsSolved = 0;
   let upsolvedCount = 0;
+  let solvedSinceWeekStart = 0;
   const difficultyBreakdown = { easy: 0, medium: 0, hard: 0 };
   const tagCounts = new Map();
 
   for (const [, info] of firstSolveByProblem) {
     contestProblemsSolved += 1;
     if (info.participantType !== "CONTESTANT") upsolvedCount += 1;
+    if (info.time >= weekStartSec) solvedSinceWeekStart += 1;
 
     const tier = difficultyTier(info.rating);
     if (tier) difficultyBreakdown[tier] += 1;
@@ -198,6 +226,7 @@ export async function fetchCFSubmissions(handle, count = 10000) {
   return {
     problemsSolved: firstSolveByProblem.size,
     solvesLast7Days,
+    solvedSinceWeekStart,
     currentStreakDays,
     bestStreakDays,
     upsolveRatio,

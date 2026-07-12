@@ -31,8 +31,9 @@ export interface UserDoc {
   ratingHistory: RatingPoint[];
   activity: {
     solvesLast7Days: number;
+    solvedThisWeek: number;
     currentStreakDays: number;
-    bestStreakDays:number;
+    bestStreakDays: number;
     upsolveRatio: number;
   };
 }
@@ -46,6 +47,20 @@ export interface NarrativeEntry {
   tipTargetUserId: string | null;
 }
 
+export interface RoundResult {
+  weekId: string;
+  solvedA: number;
+  solvedB: number;
+  winnerUserId: string | null;
+  endedAt: string;
+}
+
+export interface WeekTracking {
+  weekId: string | null;
+  startSolvedA: number;
+  startSolvedB: number;
+}
+
 export interface RivalryDoc {
   _id: string;
   userA: UserDoc;
@@ -53,4 +68,8 @@ export interface RivalryDoc {
   obsessionScoreA: number;
   obsessionScoreB: number;
   narrativeLog: NarrativeEntry[];
+  weekTracking: WeekTracking;
+  roundHistory: RoundResult[];
+  seasonScoreA: number;
+  seasonScoreB: number;
 }

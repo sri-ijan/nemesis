@@ -56,6 +56,7 @@ router.post("/:id/sync", async (req, res) => {
       user.stats.topTags = subs.topTags;
       user.stats.weakTags = subs.weakTags;
       user.activity.solvesLast7Days = subs.solvesLast7Days;
+      user.activity.solvedThisWeek = subs.solvedSinceWeekStart;
       user.activity.currentStreakDays = subs.currentStreakDays;
       user.activity.bestStreakDays=subs.bestStreakDays;
       user.activity.upsolveRatio = subs.upsolveRatio;
