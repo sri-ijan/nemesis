@@ -35,6 +35,7 @@ export interface UserDoc {
   activity: {
     solvesLast7Days: number;
     currentStreakDays: number;
+    bestStreakDays:number;
     upsolveRatio: number;
   };
 }

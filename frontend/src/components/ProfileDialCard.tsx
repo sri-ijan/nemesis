@@ -10,9 +10,9 @@ type Props = {
 type Difficulty = "easy" | "medium" | "hard";
 
 const DIFF_COLOR: Record<Difficulty, string> = {
-  easy: "#3fae6a",
-  medium: "#d97706",
-  hard: "#b34a3c",
+ easy: "#3fae6a",   // unchanged — green
+  medium: "#eab308", // was #d97706 (amber brand color) → now a true gold/yellow
+  hard: "#e5484d",
 };
 
 const DIFF_LABEL: Record<Difficulty, string> = {
@@ -45,10 +45,15 @@ export default function ProfileDialCard({ user, accent, momentum }: Props) {
     medium: -easyLen,
     hard: -(easyLen + mediumLen),
   };
-  const lengths: Record<Difficulty, number> = { easy: easyLen, medium: mediumLen, hard: hardLen };
+  const lengths: Record<Difficulty, number> = {
+    easy: easyLen,
+    medium: mediumLen,
+    hard: hardLen,
+  };
 
   const accentText = accent === "amber" ? "text-amber" : "text-ember";
-  const accentBorder = accent === "amber" ? "border-amber/30" : "border-ember/30";
+  const accentBorder =
+    accent === "amber" ? "border-amber/30" : "border-ember/30";
 
   return (
     <div
@@ -96,13 +101,18 @@ hover:ml-2
         </div>
       </div>
 
-      <p className={`font-mono text-xs uppercase tracking-widest mb-4 ${accentText}`}>
+      <p
+        className={`font-mono text-xs uppercase tracking-widest mb-4 ${accentText}`}
+      >
         {user.displayName}
       </p>
 
       <div className="flex items-center gap-5">
         {/* Dial */}
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
+        <div
+          className="relative shrink-0"
+          style={{ width: size, height: size }}
+        >
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             <circle
               cx={size / 2}
@@ -125,7 +135,7 @@ hover:ml-2
                       r={radius}
                       fill="none"
                       stroke={DIFF_COLOR[diff]}
-                      strokeWidth={baseStroke}
+                      strokeWidth={isHovered ? hoverStroke : baseStroke}
                       strokeDasharray={`${lengths[diff]} ${circumference - lengths[diff]}`}
                       strokeDashoffset={offsets[diff]}
                       strokeLinecap="butt"
@@ -146,7 +156,20 @@ hover:ml-2
               </g>
             )}
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <div
+  key={hovered ?? "total"}
+  className="
+    absolute inset-0
+    flex flex-col
+    items-center
+    justify-center
+    pointer-events-none
+    transition-all
+    duration-300
+    ease-out
+    animate-[fadeScale_.25s_ease-out]
+  "
+>
             {hovered ? (
               <>
                 <p
@@ -161,7 +184,9 @@ hover:ml-2
               </>
             ) : (
               <>
-                <p className="font-display text-3xl italic text-parchment">{total}</p>
+                <p className="font-display text-3xl italic text-parchment">
+                  {total}
+                </p>
                 <p className="text-muted text-[10px] font-mono uppercase tracking-wider">
                   solved
                 </p>

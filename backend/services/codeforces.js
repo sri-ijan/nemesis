@@ -32,7 +32,8 @@ export async function fetchCFUserInfo(handle) {
   const { data } = await axios.get(`${CF_BASE}/user.info`, {
     params: { handles: handle },
   });
-  if (data.status !== "OK") throw new Error(`CF user.info failed for ${handle}`);
+  if (data.status !== "OK")
+    throw new Error(`CF user.info failed for ${handle}`);
   const u = data.result[0];
   return {
     rating: u.rating ?? 0,
@@ -48,7 +49,8 @@ export async function fetchCFRatingHistory(handle) {
   const { data } = await axios.get(`${CF_BASE}/user.rating`, {
     params: { handle },
   });
-  if (data.status !== "OK") throw new Error(`CF user.rating failed for ${handle}`);
+  if (data.status !== "OK")
+    throw new Error(`CF user.rating failed for ${handle}`);
   return data.result.map((c) => ({
     contestName: c.contestName,
     date: new Date(c.ratingUpdateTimeSeconds * 1000),
@@ -80,7 +82,8 @@ export async function fetchCFSubmissions(handle, count = 10000) {
   const { data } = await axios.get(`${CF_BASE}/user.status`, {
     params: { handle, from: 1, count },
   });
-  if (data.status !== "OK") throw new Error(`CF user.status failed for ${handle}`);
+  if (data.status !== "OK")
+    throw new Error(`CF user.status failed for ${handle}`);
 
   const solvedDays = new Set(); // "YYYY-MM-DD" strings, UTC
   let solvesLast7Days = 0;
@@ -93,10 +96,12 @@ export async function fetchCFSubmissions(handle, count = 10000) {
     if (sub.verdict !== "OK") continue;
     const key = `${sub.problem.contestId}-${sub.problem.index}`;
 
-    const day = new Date(sub.creationTimeSeconds * 1000)
-      .toISOString()
-      .slice(0, 10);
-    solvedDays.add(day);
+    const d = new Date(sub.creationTimeSeconds * 1000);
+
+    const day = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+      2,
+      "0",
+    )}-${String(d.getUTCDate()).padStart(2, "0")}`;
 
     if (sub.creationTimeSeconds >= sevenDaysAgoSec) solvesLast7Days += 1;
 
@@ -113,12 +118,41 @@ export async function fetchCFSubmissions(handle, count = 10000) {
 
   // Streak
   let currentStreakDays = 0;
+  let bestStreakDays = 0;
   const cursor = new Date();
   cursor.setUTCHours(0, 0, 0, 0);
   while (solvedDays.has(cursor.toISOString().slice(0, 10))) {
     currentStreakDays += 1;
     cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
+
+  const sortedDays = [...solvedDays].sort();
+
+  let longest = 0;
+  let running = 0;
+
+  for (let i = 0; i < sortedDays.length; i++) {
+    if (i === 0) {
+      running = 1;
+      longest = 1;
+      continue;
+    }
+
+    const prev = new Date(sortedDays[i - 1]);
+    const cur = new Date(sortedDays[i]);
+
+    prev.setUTCDate(prev.getUTCDate() + 1);
+
+    if (prev.getTime() === cur.getTime()) {
+      running++;
+    } else {
+      running = 1;
+    }
+
+    longest = Math.max(longest, running);
+  }
+
+  bestStreakDays = longest;
 
   // Upsolve ratio + difficulty breakdown + tag counts, all from the same
   // deduped solved-problem set.
@@ -159,6 +193,7 @@ export async function fetchCFSubmissions(handle, count = 10000) {
     problemsSolved: firstSolveByProblem.size,
     solvesLast7Days,
     currentStreakDays,
+    bestStreakDays,
     upsolveRatio,
     difficultyBreakdown,
     topTags,

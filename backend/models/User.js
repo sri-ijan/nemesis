@@ -8,12 +8,12 @@ const ratingPointSchema = new mongoose.Schema(
     newRating: Number,
     rank: Number,
   },
-  { _id: false }
+  { _id: false },
 );
 
 const tagCountSchema = new mongoose.Schema(
   { tag: String, count: Number },
-  { _id: false }
+  { _id: false },
 );
 
 const userSchema = new mongoose.Schema(
@@ -51,12 +51,16 @@ const userSchema = new mongoose.Schema(
     activity: {
       solvesLast7Days: { type: Number, default: 0 },
       currentStreakDays: { type: Number, default: 0 },
+      bestStreakDays: {
+        type: Number,
+        default: 0,
+      },
       upsolveRatio: { type: Number, default: 0 }, // upsolved / total attempted post-contest
     },
 
     lastSyncedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("User", userSchema);
