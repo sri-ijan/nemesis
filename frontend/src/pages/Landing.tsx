@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createUser, createRivalry, syncUser } from "../lib/api";
+import toast from "react-hot-toast";
 
 export default function Landing() {
   const navigate = useNavigate();
   const [you, setYou] = useState({ displayName: "", codeforcesHandle: "" });
   const [rival, setRival] = useState({ displayName: "", codeforcesHandle: "" });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
 
   async function handleStartDuel() {
     if (!you.displayName || !rival.displayName) {
-      setError("Both names are required.");
+      toast.error("Both names are required.");
       return;
     }
     setLoading(true);
-    setError(null);
+
     try {
       const userA = await createUser(you);
       const userB = await createUser(rival);
@@ -25,7 +26,7 @@ export default function Landing() {
       navigate(`/duel/${rivalry._id}`);
     } catch (err: any) {
       const backendMessage = err?.response?.data?.error;
-      setError(backendMessage || err?.message || "Something went wrong.");
+      toast.error(backendMessage || err?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -60,9 +61,7 @@ export default function Landing() {
           />
         </div>
 
-        {error && (
-          <p className="text-ember text-sm mb-4 font-mono">{error}</p>
-        )}
+       
 
         <button
           onClick={handleStartDuel}
@@ -90,7 +89,9 @@ function DuelistForm({
   const accentClass = accent === "amber" ? "text-amber" : "text-ember";
   return (
     <div className="bg-graphite-900 border border-graphite-700 rounded-card p-4">
-      <p className={`font-mono text-xs uppercase tracking-widest mb-3 ${accentClass}`}>
+      <p
+        className={`font-mono text-xs uppercase tracking-widest mb-3 ${accentClass}`}
+      >
         {label}
       </p>
       <input

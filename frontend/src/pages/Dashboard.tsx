@@ -5,7 +5,7 @@ import type { RivalryDoc } from "../types";
 import RatingChart from "../components/RatingChart";
 import DuelCard from "../components/DuelCard";
 import ProfileDialCard from "../components/ProfileDialCard";
-
+import toast from "react-hot-toast";
 export default function Dashboard() {
   const { rivalryId } = useParams();
   const [rivalry, setRivalry] = useState<RivalryDoc | null>(null);
@@ -15,9 +15,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!rivalryId) return;
+
     getRivalry(rivalryId)
-      .then(setRivalry)
-      .catch((err) => setError(err.message));
+      .then((data) => {
+        setRivalry(data);
+      })
+      .catch((err) => {
+        toast.error(
+          err?.response?.data?.error || err?.message || "Something went wrong",
+        );
+      });
   }, [rivalryId]);
 
   async function handleGenerateRecap() {
@@ -29,7 +36,11 @@ export default function Dashboard() {
       const fresh = await getRivalry(rivalryId);
       setRivalry(fresh);
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || "Failed to generate recap.");
+      toast.error(
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to generate recap.",
+      );
     } finally {
       setGenerating(false);
     }
@@ -45,7 +56,7 @@ export default function Dashboard() {
       const fresh = await getRivalry(rivalry._id);
       setRivalry(fresh);
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || "Sync failed.");
+      toast.error(err?.response?.data?.error || err?.message || "Sync failed.");
     } finally {
       setSyncing(false);
     }
@@ -58,13 +69,24 @@ export default function Dashboard() {
     return <LoadingSkeleton />;
   }
 
-  const { userA, userB, obsessionScoreA, obsessionScoreB, narrativeLog } = rivalry;
+  const { userA, userB, obsessionScoreA, obsessionScoreB, narrativeLog } =
+    rivalry;
   const leader =
     userA.stats.cfRating === userB.stats.cfRating
       ? null
       : userA.stats.cfRating > userB.stats.cfRating
-      ? userA.displayName
-      : userB.displayName;
+        ? userA.displayName
+        : userB.displayName;
+  function getMomentum(history: any[]) {
+    if (!history || history.length < 2) return 0;
+
+    const lastFive = history.slice(-5);
+
+    return lastFive[lastFive.length - 1].newRating - lastFive[0].oldRating;
+  }
+
+  const momentumA = getMomentum(userA.ratingHistory);
+  const momentumB = getMomentum(userB.ratingHistory);
 
   return (
     <main className="min-h-screen px-6 py-12 md:py-16 max-w-4xl mx-auto">
@@ -120,8 +142,9 @@ export default function Dashboard() {
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <ProfileDialCard user={userA} accent="amber" />
-        <ProfileDialCard user={userB} accent="ember" />
+        <ProfileDialCard user={userA} accent="amber" momentum={momentumA} />
+
+        <ProfileDialCard user={userB} accent="ember" momentum={momentumB} />
       </section>
 
       <section className="bg-graphite-900 border border-graphite-700 rounded-card p-6 md:p-7 mb-6">
@@ -190,11 +213,15 @@ function ScoreCard({
       className={`bg-graphite-900 border ${accentBorder} rounded-card p-5 md:p-6 transition-colors`}
     >
       <div className="flex items-center justify-between mb-1">
-        <p className={`font-mono text-xs uppercase tracking-widest ${accentText}`}>
+        <p
+          className={`font-mono text-xs uppercase tracking-widest ${accentText}`}
+        >
           {label}
         </p>
         {isLeader && (
-          <span className={`font-mono text-[9px] uppercase tracking-widest ${accentText}`}>
+          <span
+            className={`font-mono text-[9px] uppercase tracking-widest ${accentText}`}
+          >
             ● grinding harder
           </span>
         )}
