@@ -22,7 +22,6 @@ nemesis/
 │   │   └── Rivalry.js        pairs two users, stores obsession scores + narrative log
 │   ├── services/
 │   │   ├── codeforces.js     CF public API — rating, history, submissions
-│   │   ├── leetcode.js       LeetCode unofficial GraphQL — solved count, ranking
 │   │   └── obsessionScore.js composite metric: velocity + streak + upsolve + rating
 │   └── routes/
 │       ├── user.js           create user, trigger platform sync
@@ -30,14 +29,14 @@ nemesis/
 │
 └── frontend/          React + Vite + TS + Tailwind
     ├── src/pages/
-    │   ├── Landing.tsx       enter both handles, kick off first sync
+    │   ├── Landing.tsx       enter both CF handles, kick off first sync
     │   └── Dashboard.tsx     head-to-head view
     └── src/components/
         ├── RatingChart.tsx   dual-line amber vs ember overlay (recharts)
         └── DuelCard.tsx      renders the Gemini-generated recap
 ```
 
-**Data flow:** frontend → Express API → Codeforces/LeetCode public APIs
+**Data flow:** frontend → Express API → Codeforces public API
 (sync) → MongoDB (cache) → frontend reads cached stats + computes obsession
 score on request. Gemini narrative generation is a separate service — see
 below.
@@ -64,8 +63,8 @@ labels.
 ## AI Studio Handoff
 
 **Split of work for this submission:**
-- **Claude** (this repo): architecture, MERN boilerplate, CF/LeetCode sync
-  services, obsession score formula, frontend shell + design system.
+- **Claude** (this repo): architecture, MERN boilerplate, CF sync
+  service, obsession score formula, frontend shell + design system.
 - **AI Studio**: the actual Gemini narrative agent — this is the piece
   submitted under the Google AI prize category.
 
@@ -130,5 +129,5 @@ npm run dev              # http://localhost:5173, proxies /api to :5000
 - Shareable duel card as an actual downloadable image (canvas export) for
   LinkedIn/X posting
 - Weekly digest narrative (cron job) instead of only contest-triggered recaps
-- LeetCode contest rating (currently only solved count + ranking, no rating
-  history — LC's contest API is separately unofficial)
+- Additional judge platforms (AtCoder, Codechef) if a rivalry spans more
+  than Codeforces

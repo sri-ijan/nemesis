@@ -20,7 +20,6 @@ const userSchema = new mongoose.Schema(
   {
     displayName: { type: String, required: true },
     codeforcesHandle: { type: String, default: null },
-    leetcodeHandle: { type: String, default: null },
 
     // Cached snapshot, refreshed by sync jobs (services/*.js)
     stats: {
@@ -28,8 +27,6 @@ const userSchema = new mongoose.Schema(
       cfMaxRating: { type: Number, default: 0 },
       cfProblemsSolved: { type: Number, default: 0 },
       cfContestsAttended: { type: Number, default: 0 },
-      lcTotalSolved: { type: Number, default: 0 },
-      lcRanking: { type: Number, default: 0 },
 
       // LeetCode-style Easy/Medium/Hard breakdown, bucketed from CF
       // problem ratings (see services/codeforces.js → difficultyTier).

@@ -15,14 +15,11 @@ export interface UserDoc {
   _id: string;
   displayName: string;
   codeforcesHandle: string | null;
-  leetcodeHandle: string | null;
   stats: {
     cfRating: number;
     cfMaxRating: number;
     cfProblemsSolved: number;
     cfContestsAttended: number;
-    lcTotalSolved: number;
-    lcRanking: number;
     difficultyBreakdown: {
       easy: number;
       medium: number;

@@ -17,7 +17,6 @@ export async function verifyHandle(handle: string): Promise<{ valid: boolean; ra
 export async function createUser(payload: {
   displayName: string;
   codeforcesHandle?: string;
-  leetcodeHandle?: string;
 }): Promise<UserDoc> {
   const { data } = await api.post("/users", payload);
   return data;
